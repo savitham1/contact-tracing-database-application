@@ -1,0 +1,689 @@
+---
+title: 'PRACTICUM 1: GROUP – AG 18'
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+
+## GROUP MEMBERS
+
+
+##### 1: Savitha Munirajaiah
+
+##### 2: Mudit Bhartia
+
+### USE CASE
+
+Lets consider we have a mobile application which help users register themselves and upload their COVID-19 test reports. Results of this report could be positive or negative, and some users may have registered but not tested yet. 
+
+When a user is tested positive a case is logged in a case management database, which helps contact tracing team manage their cases. The lifecycle of a case is Open, Assigned, WorkInProgress, and Closed. Contact Tracing team’s primary goal is to identify the contacts made by the user tested positive. As part of the case, they make contact with these exposed people who could be infected and warm them and the risks involved and advice to stay quarantined. The health worked follows up both the patient and the contacts involved in his/her cases frequently and ensure their well-being, and avoid further spread of infection. The team also tracks the area infected and their contamination level.
+
+
+
+### 1. UML Class Diagram
+
+![Conceptual Model](https://user-images.githubusercontent.com/45623734/87967471-7bfcc380-cadc-11ea-964f-fd0a46ef2886.png "Conceptual Model")
+
+#### Assumptions 
+
+1: A Person may or may not be tested for COVID-19
+
+2: Assuming infected person remembers the contacts made.
+
+3: Currently, assuming Infected persons have not travelled anywhere due to travel ban/ Lockdown.
+
+4: We are not monitoring the personal relations between Infected person and contacts made.
+
+
+
+### 2.	Table definition 
+
+
+a.	User Profile: - Contains personal information of the Patients/Users/Persons. 
+
+b.	Person: - Specifies if a user is Infected, Not-Infected, Recovered or Exposed to an infected person.  Each user is linked to their personal information table. It also contains basic information collected before Test is conducted for COVID-19. 
+
+c.	Contacts: - This entity gives us the details about the people who have made a direct or an indirect contact with the infected person. 
+
+d.	Areas Exposed: - This entity gives us information about the regions which have been affected by the covid19 virus. One of the key attributes here is the “contamination level”, which tells us about the degree of exposure on a scale of 1 to 5, with 1 being the lowest.
+
+e.	Case Logs: - This entity is designed to keep a record of all the cases which are registered in the application.
+
+f.	Contact Tracing Team: - This entity gives us information about the health workers who are working on different cases which are present with an active/open status in the case logs.
+
+g.	Test Reports: - This entity contains COVID-19 test reports of  the users who have taken the test. It has an attribute called result, which gives us the information that which all patients have been infected by the virus.
+
+h.	Testing Facility: - This entity contains the details the labs which are involved in the testing of the patients.
+
+
+### 3.	Logical Data Model in Crow’s Feet, ERD
+
+![Logical Model](https://user-images.githubusercontent.com/45623734/87967638-be260500-cadc-11ea-95e9-f09a45d8665e.png "Logical Model")
+
+
+
+Link: - https://app.lucidchart.com/invitations/accept/116e355d-4c4d-4ef9-860c-f5d8b176828c
+
+### 4.	Definition of relational schema with proof that it is in BCNF.
+
+Functional Dependencies:-
+
+
+a.	Contact Table
+
+contactId -> user1Id, user2Id, dateOfContact, riskFactor.
+
+b.	Investigation Table
+
+investigationId -> contactId, caseId.
+
+c.	ContactTractingTean Table
+
+empId -> employeeName, phoneNumber, email.
+
+d.	Person Table
+
+userId -> userType, sysmtopmsOnsetDate, firstTest , employedInHealthCare, symptoticAsSpecifiedByCDC, hospitalized , ICU  , residentInCongregateCareSetting, pregnant, dateContactedByTracingTeam.
+
+e.	TestReport
+
+testReportID -> userID, testFacilityID, testDate, resultDate, result, caseID, device.
+
+f.	CaseLog Table
+
+caseId -> currentStatus, empId.
+
+g.	UserProfile Table
+
+userID -> firstName, lastName, phoneNumber, DOB, sex, email, areaID.
+
+h.	TestFacility Table
+
+testFacilityID -> facilityName, licenseNumber, phoneNumber, address, zip.
+
+i.	CaseLogArea Table
+
+caseLogAreaId -> caseId, areaID.
+
+j.	Area Table
+
+areaID -> zipCode, city, state, country, contaminationLevel.
+
+In the tables above, 
+
+-	Every attribute is atomic.
+-	Attributes are not partially dependent on candidate key/ composite key.
+-	There are no transitive dependencies within the attributes, they were resolved by creating separate entities. 
+-	Every attribute of a table is determined only by its primary key. No other prime attribute can be used to derive non-prime        attribute. Hence, the tables satisfy 1NF, 2NF, 3NF and are in BCNF . 
+
+
+### Database Schema- CREATE TABLE COMMANDS
+
+
+```{inlcude=TRUE}
+
+CREATE TABLE PERSON (
+    userId    INT AUTO_INCREMENT,
+    userType    VARCHAR(20),
+    symptomsOnsetDate    DATE,
+    firstTest    VARCHAR(10) ,
+    employedInHealthCare    VARCHAR(10),
+    symptoticAsSpecifiedByCDC    VARCHAR(10) ,
+    hospitalized    VARCHAR(10) ,
+    ICU    VARCHAR(10) ,
+    residentInCongregateCareSetting    VARCHAR(10) ,
+    pregnant    VARCHAR(10) ,
+    dateContactedByTracingTeam    DATE,
+    CONSTRAINT PRIMARY KEY( userId ),
+    CONSTRAINT CHECK (userType IN ("Infected","Not-Infected","Recovered","Exposed")),
+    CONSTRAINT CHECK (firstTest IN ("Yes","No","Unknown")),
+    CONSTRAINT CHECK (employedInHealthCare IN ("Yes","No","Unknown")),
+    CONSTRAINT CHECK (symptoticAsSpecifiedByCDC IN ("Yes","No","Unknown")),
+    CONSTRAINT CHECK (hospitalized IN ("Yes","No","Unknown")),
+    CONSTRAINT CHECK (residentInCongregateCareSetting IN ("Yes","No","Unknown")),
+    CONSTRAINT CHECK (pregnant IN ("Yes","No","Unknown")),
+    CONSTRAINT CHECK (ICU IN ("Yes","No","Unknown"))
+);
+
+
+CREATE TABLE AREA (
+    areaId    INT AUTO_INCREMENT,
+    zipCode VARCHAR(100),
+    city    VARCHAR(100), 
+    state    VARCHAR(100), 
+    country    VARCHAR(100),
+    contaminationLevel INT ,  
+    PRIMARY KEY( areaId ),
+    CONSTRAINT CHECK (contaminationLevel between 1 and 5)
+);
+
+CREATE TABLE TestFacility ( 
+		    testFacilityID Integer primary key,
+                            facilityName Text,
+                            licenseNumber varchar(100),
+                            phoneNumber VARCHAR(100),
+                            address Text,
+                            zip VARCHAR(100));
+
+CREATE TABLE ContactTracingTeam (
+		        empID Integer primary key,
+                                employeeName varchar(100),
+                                phoneNumber VARCHAR(100),
+                                email varchar(100));
+
+
+CREATE TABLE CaseLog (
+		caseID Integer primary key,
+                        currentStatus Text not null,
+                        empID Integer,
+                        foreign key FCL_CT (empID) references ContactTracingTeam(empID),
+                        constraint chk_currentStatus check (currentStatus in ("Open", "Closed","WorkInProgress", "Assigned")));
+
+CREATE TABLE TestReport (
+		    testReportID Integer PRIMARY KEY,
+                            userID Integer,
+                            testFacilityID Integer,
+                            testDate Date,
+                            resultDate Date,
+                            result Text NOT NULL,
+                            caseID Integer,
+                            device Text,
+                            foreign key FTR_P (userID) references Person(userID),
+                            foreign key FTR_TF (testFacilityID) references TestFacility(testFacilityID),
+                            foreign key FTR_CL (caseID) references CaseLog(caseID),
+                            constraint chk_result check (result in ("Positive", "Negative")));
+
+
+
+CREATE TABLE CONTACT (
+    contactID    INT AUTO_INCREMENT,
+    user1Id    INT NOT NULL, 
+    user2Id    INT NOT NULL,
+    riskFactor    INT , 
+    DateOfContact    DATE,
+    PRIMARY KEY( contactID ),
+    CONSTRAINT FC_P1 FOREIGN KEY(user1Id) REFERENCES PERSON(userId),
+    CONSTRAINT FC_P2 FOREIGN KEY(user2Id) REFERENCES PERSON(userId),
+    constraint CHECK (riskFactor>=0 and riskFactor<=5));
+
+CREATE TABLE Investigation (
+		    investigationID Integer primary key,
+                            contactID Integer,
+                            caseID Integer,
+                            foreign key FI_C (contactID) references Contact(contactID),
+                            foreign key FI_CL (caseID) references CaseLog(caseID));
+
+
+
+CREATE TABLE USERPROFILE (
+    userId    INT AUTO_INCREMENT,
+    firstName    VARCHAR(100), 
+    lastName    VARCHAR(100),
+    phoneNumber    VARCHAR(100), 
+    DOB    DATE,
+    sex VARCHAR(20) ,
+    email VARCHAR(100),
+    areaId INT,
+    CONSTRAINT PK1 PRIMARY KEY( userId ),
+    CONSTRAINT FUP_P FOREIGN KEY(userId) REFERENCES PERSON(userId),
+    CONSTRAINT FUP_A FOREIGN KEY(areaId) REFERENCES AREA(areaId),
+    CONSTRAINT CHECK (sex IN ("Female","Male","Transgender","Other")));
+
+CREATE TABLE CASELOGAREA (
+    caseLogAreaId    INT AUTO_INCREMENT,
+    caseId    INT NOT NULL, 
+    areaId    INT NOT NULL,
+    PRIMARY KEY( caseLogAreaId ),
+    CONSTRAINT FCLA_CL FOREIGN KEY(caseId) REFERENCES CASELOG(caseId),
+    CONSTRAINT FCLA_A FOREIGN KEY(areaId) REFERENCES AREA(areaId));
+
+
+
+
+```
+
+
+
+### SQL Statements (Insertion):- 
+
+
+```{include=TRUE}
+
+
+
+INSERT INTO `PERSON` (`userId`,`userType`,`symptomsOnsetDate`,`firstTest`,`employedInHealthCare`,`symptoticAsSpecifiedByCDC`,`hospitalized`,`ICU`,`residentInCongregateCareSetting`,`pregnant`,`dateContactedByTracingTeam`) VALUES (1,"Not-Infected","2020-03-25","UNKNOWN","NO","NO","UNKNOWN","YES","NO","UNKNOWN","2020-06-04"),(2,"Recovered","2020-04-10","NO","YES","NO","NO","YES","UNKNOWN","YES","2020-05-26"),(3,"Exposed","2019-12-16","UNKNOWN","NO","YES","YES","NO","NO","YES","2020-06-28"),(4,"Exposed","2019-11-19","NO","YES","YES","YES","NO","UNKNOWN","YES","2020-05-27"),(5,"Infected","2020-07-09","NO","YES","UNKNOWN","NO","UNKNOWN","YES","UNKNOWN","2020-06-24"),(6,"Recovered","2020-01-08","UNKNOWN","NO","NO","UNKNOWN","YES","NO","UNKNOWN","2020-05-02"),(7,"Recovered","2020-01-14","YES","YES","YES","YES","UNKNOWN","YES","UNKNOWN","2020-04-08"),(8,"Not-Infected","2020-04-06","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","2020-03-31"),(9,"Exposed","2019-05-10","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","NO","YES","2020-05-03"),(10,"Recovered","2020-02-12","UNKNOWN","YES","NO","NO","YES","YES","NO","2020-06-18");
+INSERT INTO `PERSON` (`userId`,`userType`,`symptomsOnsetDate`,`firstTest`,`employedInHealthCare`,`symptoticAsSpecifiedByCDC`,`hospitalized`,`ICU`,`residentInCongregateCareSetting`,`pregnant`,`dateContactedByTracingTeam`) VALUES (11,"Infected","2019-11-07","UNKNOWN","UNKNOWN","NO","UNKNOWN","NO","YES","YES","2020-05-20"),(12,"Recovered","2020-01-04","UNKNOWN","NO","NO","UNKNOWN","NO","NO","NO","2020-05-19"),(13,"Not-Infected","2020-02-19","UNKNOWN","YES","YES","NO","UNKNOWN","UNKNOWN","NO","2020-03-31"),(14,"Infected","2019-11-17","NO","NO","YES","NO","UNKNOWN","YES","NO","2020-04-05"),(15,"Exposed","2019-07-22","UNKNOWN","NO","UNKNOWN","UNKNOWN","UNKNOWN","YES","NO","2020-06-18"),(16,"Not-Infected","2020-02-27","NO","UNKNOWN","NO","YES","YES","YES","YES","2020-04-28"),(17,"Infected","2019-06-05","YES","UNKNOWN","YES","YES","NO","UNKNOWN","YES","2020-07-12"),(18,"Recovered","2019-04-01","UNKNOWN","UNKNOWN","UNKNOWN","YES","YES","UNKNOWN","UNKNOWN","2020-05-18"),(19,"Not-Infected","2020-02-10","UNKNOWN","UNKNOWN","YES","UNKNOWN","YES","UNKNOWN","NO","2020-04-15"),(20,"Infected","2019-08-12","YES","NO","NO","NO","YES","NO","YES","2020-06-28");
+INSERT INTO `PERSON` (`userId`,`userType`,`symptomsOnsetDate`,`firstTest`,`employedInHealthCare`,`symptoticAsSpecifiedByCDC`,`hospitalized`,`ICU`,`residentInCongregateCareSetting`,`pregnant`,`dateContactedByTracingTeam`) VALUES (21,"Infected","2019-07-04","UNKNOWN","NO","NO","NO","YES","YES","NO","2020-07-03"),(22,"Not-Infected","2019-09-20","UNKNOWN","UNKNOWN","NO","YES","UNKNOWN","YES","NO","2020-03-27"),(23,"Not-Infected","2019-08-04","UNKNOWN","UNKNOWN","YES","NO","NO","NO","NO","2020-06-12"),(24,"Infected","2019-12-14","YES","NO","UNKNOWN","YES","YES","YES","YES","2020-05-28"),(25,"Not-Infected","2019-09-12","YES","YES","NO","YES","NO","NO","YES","2020-03-28"),(26,"Not-Infected","2019-05-14","NO","YES","NO","YES","NO","UNKNOWN","UNKNOWN","2020-03-31"),(27,"Not-Infected","2019-05-17","NO","YES","YES","YES","YES","UNKNOWN","YES","2020-05-13"),(28,"Not-Infected","2019-05-06","YES","UNKNOWN","YES","UNKNOWN","UNKNOWN","NO","NO","2020-05-16"),(29,"Not-Infected","2019-05-28","YES","NO","YES","NO","YES","UNKNOWN","YES","2020-04-18"),(30,"Exposed","2019-11-01","UNKNOWN","YES","UNKNOWN","UNKNOWN","NO","YES","UNKNOWN","2020-04-03");
+INSERT INTO `PERSON` (`userId`,`userType`,`symptomsOnsetDate`,`firstTest`,`employedInHealthCare`,`symptoticAsSpecifiedByCDC`,`hospitalized`,`ICU`,`residentInCongregateCareSetting`,`pregnant`,`dateContactedByTracingTeam`) VALUES (31,"Exposed","2019-09-22","YES","UNKNOWN","YES","YES","NO","NO","NO","2020-05-17"),(32,"Exposed","2019-12-06","UNKNOWN","YES","UNKNOWN","UNKNOWN","NO","NO","UNKNOWN","2020-07-18"),(33,"Exposed","2019-05-15","NO","YES","YES","YES","UNKNOWN","NO","YES","2020-03-27"),(34,"Not-Infected","2019-07-26","NO","YES","NO","UNKNOWN","YES","YES","NO","2020-06-09"),(35,"Not-Infected","2020-06-20","YES","UNKNOWN","UNKNOWN","UNKNOWN","YES","NO","UNKNOWN","2020-04-24"),(36,"Infected","2020-06-09","YES","NO","YES","UNKNOWN","UNKNOWN","YES","NO","2020-04-20"),(37,"Not-Infected","2019-09-25","UNKNOWN","YES","UNKNOWN","YES","UNKNOWN","YES","YES","2020-04-30"),(38,"Infected","2019-10-12","UNKNOWN","UNKNOWN","YES","YES","YES","NO","YES","2020-06-29"),(39,"Not-Infected","2019-09-16","YES","NO","NO","NO","UNKNOWN","YES","YES","2020-07-08"),(40,"Not-Infected","2019-08-26","NO","UNKNOWN","YES","YES","NO","UNKNOWN","UNKNOWN","2020-05-14");
+INSERT INTO `PERSON` (`userId`,`userType`,`symptomsOnsetDate`,`firstTest`,`employedInHealthCare`,`symptoticAsSpecifiedByCDC`,`hospitalized`,`ICU`,`residentInCongregateCareSetting`,`pregnant`,`dateContactedByTracingTeam`) VALUES (41,"Infected","2020-05-25","UNKNOWN","UNKNOWN","NO","YES","NO","UNKNOWN","NO","2020-04-14"),(42,"Recovered","2019-07-09","YES","UNKNOWN","YES","UNKNOWN","YES","UNKNOWN","UNKNOWN","2020-06-04"),(43,"Not-Infected","2020-02-01","YES","UNKNOWN","NO","YES","UNKNOWN","UNKNOWN","UNKNOWN","2020-04-14"),(44,"Not-Infected","2019-05-05","YES","YES","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","NO","2020-06-18"),(45,"Infected","2019-08-22","NO","NO","UNKNOWN","YES","YES","YES","NO","2020-05-04"),(46,"Not-Infected","2020-06-21","YES","NO","NO","NO","NO","YES","NO","2020-05-01"),(47,"Not-Infected","2020-03-01","UNKNOWN","YES","UNKNOWN","YES","NO","YES","YES","2020-06-25"),(48,"Infected","2020-03-31","YES","UNKNOWN","NO","YES","YES","YES","NO","2020-07-07"),(49,"Infected","2019-08-19","UNKNOWN","NO","YES","UNKNOWN","NO","YES","NO","2020-04-02"),(50,"Recovered","2019-05-21","NO","YES","NO","UNKNOWN","NO","NO","UNKNOWN","2020-06-10");
+INSERT INTO `PERSON` (`userId`,`userType`,`symptomsOnsetDate`,`firstTest`,`employedInHealthCare`,`symptoticAsSpecifiedByCDC`,`hospitalized`,`ICU`,`residentInCongregateCareSetting`,`pregnant`,`dateContactedByTracingTeam`) VALUES (51,"Not-Infected","2020-04-16","YES","UNKNOWN","UNKNOWN","UNKNOWN","YES","NO","UNKNOWN","2020-03-25"),(52,"Recovered","2019-07-09","UNKNOWN","NO","YES","YES","NO","NO","NO","2020-04-16"),(53,"Recovered","2020-04-08","YES","UNKNOWN","NO","YES","UNKNOWN","YES","NO","2020-04-20"),(54,"Recovered","2019-10-25","NO","UNKNOWN","UNKNOWN","UNKNOWN","NO","NO","YES","2020-05-13"),(55,"Exposed","2020-06-08","NO","NO","NO","UNKNOWN","NO","UNKNOWN","UNKNOWN","2020-06-19"),(56,"Infected","2020-03-04","UNKNOWN","YES","NO","NO","UNKNOWN","UNKNOWN","YES","2020-04-16"),(57,"Infected","2019-12-16","YES","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","YES","UNKNOWN","2020-04-09"),(58,"Infected","2019-05-31","YES","NO","UNKNOWN","UNKNOWN","UNKNOWN","YES","UNKNOWN","2020-06-16"),(59,"Recovered","2019-07-15","YES","UNKNOWN","UNKNOWN","NO","UNKNOWN","NO","UNKNOWN","2020-04-07"),(60,"Infected","2020-01-16","YES","YES","NO","YES","NO","NO","UNKNOWN","2020-05-26");
+INSERT INTO `PERSON` (`userId`,`userType`,`symptomsOnsetDate`,`firstTest`,`employedInHealthCare`,`symptoticAsSpecifiedByCDC`,`hospitalized`,`ICU`,`residentInCongregateCareSetting`,`pregnant`,`dateContactedByTracingTeam`) VALUES (61,"Not-Infected","2020-07-02","NO","NO","UNKNOWN","NO","NO","UNKNOWN","UNKNOWN","2020-05-27"),(62,"Infected","2019-10-04","YES","NO","YES","UNKNOWN","NO","UNKNOWN","YES","2020-04-24"),(63,"Recovered","2019-09-03","UNKNOWN","YES","YES","YES","YES","YES","UNKNOWN","2020-05-07"),(64,"Exposed","2019-08-08","NO","NO","NO","NO","NO","NO","YES","2020-06-28"),(65,"Exposed","2019-08-01","UNKNOWN","NO","NO","NO","YES","YES","UNKNOWN","2020-06-07"),(66,"Infected","2019-04-12","UNKNOWN","NO","UNKNOWN","YES","NO","UNKNOWN","NO","2020-06-17"),(67,"Recovered","2020-04-18","YES","UNKNOWN","NO","UNKNOWN","NO","YES","YES","2020-07-04"),(68,"Infected","2019-10-25","UNKNOWN","NO","NO","YES","NO","NO","YES","2020-07-04"),(69,"Not-Infected","2020-02-22","NO","NO","NO","YES","UNKNOWN","UNKNOWN","NO","2020-05-16"),(70,"Not-Infected","2020-05-19","UNKNOWN","YES","UNKNOWN","UNKNOWN","YES","NO","NO","2020-05-19");
+INSERT INTO `PERSON` (`userId`,`userType`,`symptomsOnsetDate`,`firstTest`,`employedInHealthCare`,`symptoticAsSpecifiedByCDC`,`hospitalized`,`ICU`,`residentInCongregateCareSetting`,`pregnant`,`dateContactedByTracingTeam`) VALUES (71,"Recovered","2019-09-18","NO","YES","UNKNOWN","UNKNOWN","NO","UNKNOWN","UNKNOWN","2020-05-20"),(72,"Not-Infected","2019-12-22","NO","YES","NO","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","2020-04-19"),(73,"Recovered","2020-07-06","YES","UNKNOWN","UNKNOWN","UNKNOWN","NO","YES","UNKNOWN","2020-04-17"),(74,"Not-Infected","2019-04-06","UNKNOWN","UNKNOWN","UNKNOWN","UNKNOWN","YES","NO","YES","2020-04-28"),(75,"Not-Infected","2020-03-28","NO","NO","NO","YES","YES","YES","NO","2020-06-15"),(76,"Infected","2020-07-16","UNKNOWN","YES","YES","YES","YES","NO","NO","2020-04-20"),(77,"Exposed","2020-06-30","YES","YES","UNKNOWN","NO","UNKNOWN","YES","YES","2020-05-29"),(78,"Not-Infected","2019-09-24","YES","NO","YES","NO","NO","YES","YES","2020-04-28"),(79,"Exposed","2020-03-15","YES","NO","UNKNOWN","NO","NO","YES","NO","2020-05-05"),(80,"Recovered","2020-05-13","UNKNOWN","UNKNOWN","NO","YES","UNKNOWN","YES","YES","2020-05-14");
+INSERT INTO `PERSON` (`userId`,`userType`,`symptomsOnsetDate`,`firstTest`,`employedInHealthCare`,`symptoticAsSpecifiedByCDC`,`hospitalized`,`ICU`,`residentInCongregateCareSetting`,`pregnant`,`dateContactedByTracingTeam`) VALUES (81,"Infected","2019-05-29","NO","YES","UNKNOWN","YES","YES","NO","NO","2020-06-16"),(82,"Not-Infected","2019-12-25","NO","NO","YES","NO","YES","UNKNOWN","YES","2020-05-05"),(83,"Exposed","2019-05-22","UNKNOWN","NO","UNKNOWN","NO","UNKNOWN","YES","UNKNOWN","2020-05-27"),(84,"Exposed","2020-07-03","YES","NO","UNKNOWN","NO","UNKNOWN","NO","YES","2020-07-10"),(85,"Recovered","2020-06-16","YES","UNKNOWN","NO","UNKNOWN","YES","UNKNOWN","UNKNOWN","2020-05-05"),(86,"Infected","2020-07-17","UNKNOWN","NO","NO","YES","NO","NO","YES","2020-04-04"),(87,"Recovered","2019-06-26","NO","UNKNOWN","YES","UNKNOWN","UNKNOWN","UNKNOWN","NO","2020-03-26"),(88,"Not-Infected","2019-11-03","UNKNOWN","NO","UNKNOWN","NO","UNKNOWN","NO","UNKNOWN","2020-07-04"),(89,"Not-Infected","2020-04-15","YES","UNKNOWN","UNKNOWN","YES","YES","NO","NO","2020-05-17"),(90,"Exposed","2020-06-29","UNKNOWN","NO","YES","UNKNOWN","YES","YES","UNKNOWN","2020-07-10");
+INSERT INTO `PERSON` (`userId`,`userType`,`symptomsOnsetDate`,`firstTest`,`employedInHealthCare`,`symptoticAsSpecifiedByCDC`,`hospitalized`,`ICU`,`residentInCongregateCareSetting`,`pregnant`,`dateContactedByTracingTeam`) VALUES (91,"Not-Infected","2019-07-15","NO","UNKNOWN","NO","UNKNOWN","YES","YES","UNKNOWN","2020-05-04"),(92,"Exposed","2019-05-16","UNKNOWN","UNKNOWN","NO","UNKNOWN","YES","NO","YES","2020-05-13"),(93,"Infected","2020-01-03","YES","YES","NO","YES","YES","YES","UNKNOWN","2020-06-13"),(94,"Infected","2019-04-17","YES","NO","YES","YES","NO","UNKNOWN","NO","2020-05-01"),(95,"Infected","2020-07-16","YES","NO","UNKNOWN","YES","UNKNOWN","YES","NO","2020-04-10"),(96,"Infected","2019-09-21","NO","UNKNOWN","UNKNOWN","YES","NO","NO","UNKNOWN","2020-05-20"),(97,"Not-Infected","2019-03-24","NO","UNKNOWN","YES","NO","YES","NO","NO","2020-05-13"),(98,"Recovered","2019-09-15","YES","YES","NO","UNKNOWN","YES","NO","YES","2020-05-12"),(99,"Exposed","2020-05-04","NO","UNKNOWN","YES","NO","NO","NO","YES","2020-07-14"),(100,"Not-Infected","2019-05-05","UNKNOWN","YES","NO","NO","YES","YES","UNKNOWN","2020-03-27");
+
+
+INSERT INTO `Area` (`areaID`,`zipCode`,`city`,`state`,`country`,`contaminationLevel`) VALUES (1,"67548","Rhayader","P.O. Box 217, 336 Ac Avenue","Pitcairn Islands",5),(2,"796515","Korbach","6357 Lobortis Rd.","Slovenia",3),(3,"22725","Duncan","423-1926 Pede. Road","Malawi",2),(4,"0750","Hohenems","Ap #893-2910 Gravida Road","Sudan",3),(5,"A0A 7X0","Gibbons","887-1551 Pellentesque Rd.","Canada",1),(6,"X4J 0B9","Torreón","Ap #663-2565 Purus. Rd.","Pakistan",4),(7,"7088","Algeciras","430-849 Eget Avenue","Antigua and Barbuda",5),(8,"01163","Stary Oskol","7745 Ut Avenue","Tuvalu",4),(9,"07-814","Sgonico","P.O. Box 424, 2666 Proin Avenue","Israel",3),(10,"08823-852","Barrhead","Ap #473-3366 Vitae Av.","Spain",3),(11,"211596","Gulfport","P.O. Box 845, 1943 Ultricies St.","Liberia",1),(12,"082919","Dubna","292-4467 Commodo Road","Equatorial Guinea",3),(13,"8653","Sluizen","P.O. Box 973, 1826 Egestas Road","Cyprus",1),(14,"212186","Enterprise","Ap #397-338 Est Rd.","Lebanon",2),(15,"40015","Beho","P.O. Box 333, 8554 Porttitor St.","Belize",5),(16,"08777","Perth","651-6332 Vehicula Road","Ireland",5),(17,"62-076","Wagga Wagga","Ap #493-6366 Lorem Road","Austria",2),(18,"30269","Tumbler Ridge","P.O. Box 946, 2710 Congue Rd.","French Southern Territories",4),(19,"15469","Maipú","P.O. Box 550, 375 Ligula. Av.","Bouvet Island",2),(20,"768257","Zaragoza","P.O. Box 794, 6277 Euismod Av.","Mozambique",5),(21,"82048","Vauda Canavese","P.O. Box 384, 4286 Iaculis, Street","Bonaire, Sint Eustatius and Saba",3),(22,"3806","Fayetteville","9629 Aliquet. St.","United States",4),(23,"660109","Bhopal","Ap #746-1079 Commodo St.","Mongolia",1),(24,"65549","Thanjavur","8339 Libero Av.","Myanmar",1),(25,"Z4519","Cochin","740-7343 Duis Avenue","American Samoa",2),(26,"07918-00165","Zaanstad","Ap #884-6692 Sed Road","Uzbekistan",4),(27,"73370","Anantapur","Ap #409-8151 Feugiat St.","Turkey",4),(28,"7923","San Vito al Tagliamento","Ap #784-1144 Ut, St.","Madagascar",5),(29,"7282","Thorembais-les-BŽguines","Ap #757-9225 Nulla Ave","Falkland Islands",1),(30,"376223","Newcastle","P.O. Box 314, 658 Justo. Av.","Guatemala",3),(31,"94443-000","Springdale","Ap #543-8002 Quis Avenue","British Indian Ocean Territory",4),(32,"67-114","Gorzów Wielkopolski","167-8341 Et, Rd.","Croatia",1),(33,"995836","New Orleans","6664 At St.","Finland",3),(34,"11975","Alcobendas","5869 Neque. Street","Samoa",2),(35,"83905","Owensboro","254-3213 Libero Av.","Monaco",3),(36,"79899","Rosciano","Ap #805-1560 Consectetuer Avenue","Algeria",2),(37,"62958","Motta Sant'Anastasia","6524 Netus Rd.","Ireland",3),(38,"7307","Ansfelden","Ap #100-4999 Eget St.","Peru",4),(39,"62172","Bernau","P.O. Box 841, 7308 Adipiscing St.","Moldova",4),(40,"85825","Emden","8819 Nam Street","Tokelau",1),(41,"937934","Chaudfontaine","P.O. Box 473, 2056 Nonummy Rd.","Bermuda",4),(42,"51200","Warren","456-7413 Tellus Ave","Montserrat",4),(43,"2570","Kurovskoye","Ap #413-8150 Lobortis Rd.","Bulgaria",4),(44,"48282","Lebu","8285 Tempor Avenue","Lesotho",4),(45,"71-736","Solre-sur-Sambre","100 Ut Ave","Vanuatu",4),(46,"22766-18799","Harelbeke","301-345 Luctus Street","Viet Nam",5),(47,"412727","Palmilla","568-7068 Eget Rd.","Bouvet Island",5),(48,"270392","Karachi","6133 Porttitor Ave","Uganda",2),(49,"E6Z 9HG","Sonnino","Ap #397-1137 Diam Rd.","Afghanistan",3),(50,"E8K 8P3","Illapel","404-527 Posuere Rd.","Israel",1),(51,"K14 1NU","İslahiye","Ap #360-7048 Sed, Av.","Cayman Islands",4),(52,"57026","Bottidda","P.O. Box 282, 4977 Elit, Road","Bahamas",5),(53,"85254-56700","Götzis","930-9011 Urna. Road","Isle of Man",5),(54,"89562-25517","Columbus","Ap #209-2870 Ornare Av.","Curaçao",4),(55,"9663 QH","Pichidegua","752-8286 Eros St.","Congo, the Democratic Republic of the",1),(56,"65370","Stoke-on-Trent","100-475 Id Rd.","Jamaica",2),(57,"94219-417","Flawinne","P.O. Box 896, 1629 Et St.","Mauritania",3),(58,"20202","Itegem","Ap #425-1184 Suscipit, Rd.","French Southern Territories",5),(59,"77923","Hody","Ap #767-5724 Vel, Road","Ireland",4),(60,"73204","HavrŽ","405-3927 Pede, Road","United States",2),(61,"25872","Kano","Ap #303-8046 Arcu. Ave","Malta",4),(62,"9643","Märsta","Ap #149-9679 Id Rd.","Saint Vincent and The Grenadines",4),(63,"7607","Katav-Ivanovsk","1376 Et, Rd.","Ireland",5),(64,"212183","Opprebais","Ap #869-2432 Dolor. St.","Gabon",3),(65,"91366","Maubeuge","284-2166 Integer Street","Gibraltar",1),(66,"18298","Novy Oskol","4749 Rutrum Ave","Botswana",5),(67,"30624-642","Etobicoke","Ap #623-2613 Massa. Street","Spain",2),(68,"18624","Cleveland","162-6386 Ac St.","Ghana",2),(69,"2911","Akhisar","725-9694 Mus. Av.","Kazakhstan",4),(70,"33980","Waalwijk","Ap #619-2779 Cras St.","Guam",1),(71,"34358-51188","Stockerau","Ap #983-8666 Gravida St.","Hungary",5),(72,"82579-12297","Rosoux-Crenwick","541-3483 Ligula. Av.","China",5),(73,"10618","Columbus","7867 Aliquam Road","Turkmenistan",5),(74,"K8G 7GF","Ikot Ekpene","Ap #264-5708 Ante Av.","United Arab Emirates",2),(75,"GX55 7IF","Garbsen","152-9662 Egestas. Avenue","Niue",5),(76,"421456","Puerto Guzmán","P.O. Box 204, 7011 Tellus Rd.","Cuba",2),(77,"L08 3WK","Trento","Ap #571-1647 Egestas St.","Ecuador",5),(78,"9700","Saint-Denis","P.O. Box 627, 3409 Orci, Ave","Latvia",3),(79,"QV01 5BM","Crewe","Ap #233-7565 Semper, Rd.","Poland",5),(80,"214257","Blitar","Ap #892-6154 Tincidunt St.","Australia",5),(81,"30663","Jeonju","P.O. Box 968, 606 Posuere Road","Mozambique",1),(82,"22-895","Cairns","Ap #834-4033 Ornare Rd.","Jordan",3),(83,"4602","Kent","Ap #730-1100 Eget, Ave","French Southern Territories",4),(84,"3991","Sh�diac","6654 Eu, Av.","Vanuatu",2),(85,"P6Y 0P7","Isola del Gran Sasso d'Italia","Ap #928-3365 Eu Rd.","Malawi",5),(86,"85063-75003","Berlare","799-7413 Nulla Rd.","Taiwan",5),(87,"4141","Bear","Ap #708-8169 Blandit Road","Iran",1),(88,"738639","Avignon","P.O. Box 629, 1547 Cursus Street","Jamaica",2),(89,"30773","Falerone","8488 Suspendisse Rd.","Saudi Arabia",2),(90,"35133","Chetwynd","5283 Adipiscing Av.","Hong Kong",4),(91,"29-944","Oldenburg","P.O. Box 635, 518 Nunc Road","Chile",3),(92,"6897","Virginal-Samme","1819 Fames Road","Congo, the Democratic Republic of the",5),(93,"3649 ZW","Villers-le-Peuplier","802-1262 Lectus Av.","Guadeloupe",1),(94,"N4X 1A4","Ostellato","832-2968 Sed Ave","Bangladesh",2),(95,"6261 YL","Roselies","146 Consectetuer Av.","Palestine, State of",1),(96,"3419","Gouda","313-4668 Magna. Ave","Cape Verde",2),(97,"50761","Aschaffenburg","Ap #741-3657 Diam. Avenue","United Arab Emirates",2),(98,"2633 XS","Plymouth","6946 Enim, Ave","Moldova",2),(99,"4992","Tarsus","5648 Purus Street","Northern Mariana Islands",2),(100,"52229-24773","Nadrin","9090 Aliquam Av.","San Marino",2);
+INSERT INTO `userprofile` (`userId`,`firstName`,`lastName`,`phoneNumber`,`DOB`,`sex`,`email`,`areaId`) VALUES (1,"Kimberly","Baxter","3846187265","1991-06-27","Other","euismod.enim.Etiam@Donec.co.uk",6),(2,"Risa","Best","0957083329","2019-07-16","Transgender","ligula@aodiosemper.edu",82),(3,"Armando","Lopez","8954325642","1988-03-29","Transgender","blandit@necimperdietnec.com",65),(4,"Arden","Phelps","3744365856","1992-03-06","Transgender","quis.arcu@elementumduiquis.org",91),(5,"Elmo","Sharpe","6136000985","1998-05-02","Male","ac.arcu@egetvarius.net",53),(6,"Oprah","Dunlap","6881846998","2006-05-19","Other","ipsum@at.net",71),(7,"Richard","Case","4997347402","1983-03-30","Male","sit.amet.ultricies@magna.net",54),(8,"Zenia","Clarke","7023432701","1981-09-02","Female","fringilla.Donec.feugiat@ornareegestas.com",17),(9,"Zachary","Black","4279399103","1960-07-31","Male","non@nascetur.com",17),(10,"Quin","Carter","8875540813","2012-12-08","Female","ipsum.dolor.sit@ornaresagittis.org",77);
+INSERT INTO `userprofile` (`userId`,`firstName`,`lastName`,`phoneNumber`,`DOB`,`sex`,`email`,`areaId`) VALUES (11,"Merrill","Frederick","4615865156","1962-01-04","Transgender","Curabitur@Vestibulumanteipsum.org",27),(12,"Nigel","Lowe","7572504643","1990-01-24","Male","tempor.augue.ac@nonnisiAenean.ca",57),(13,"Herrod","Vinson","6645212077","1964-09-04","Female","tellus.id@Curabitur.net",79),(14,"Josephine","Lynn","7735631265","1985-11-09","Other","ut@auctor.edu",10),(15,"Donna","Kennedy","8171958209","1966-02-22","Female","lectus.pede@luctusipsum.edu",42),(16,"Lars","Gay","0613796533","1958-05-31","Transgender","Ut@SuspendissesagittisNullam.org",97),(17,"Dexter","Patterson","4352361571","2005-09-13","Other","aliquet.nec.imperdiet@Donec.ca",58),(18,"Uma","Vaughn","2103563340","1955-02-06","Transgender","eros@risus.ca",90),(19,"Haley","Moon","7134895233","1981-11-26","Other","et.risus@Maecenasiaculis.co.uk",15),(20,"Belle","Lindsay","2709063774","1992-04-22","Transgender","sed@Inlorem.ca",53);
+INSERT INTO `userprofile` (`userId`,`firstName`,`lastName`,`phoneNumber`,`DOB`,`sex`,`email`,`areaId`) VALUES (21,"Elaine","Marsh","2319887056","1969-11-03","Female","magna.Ut.tincidunt@Proineget.net",88),(22,"Keely","Ward","9904009481","2010-09-06","Transgender","fringilla.cursus.purus@posuerecubilia.org",99),(23,"Nash","Velasquez","5488915256","1966-06-27","Male","tellus.non.magna@congueIn.com",43),(24,"Elvis","Foster","9900909300","1964-01-09","Male","turpis@est.com",72),(25,"Hector","Hopper","0921311263","1950-03-08","Male","amet.risus.Donec@convallis.org",40),(26,"Laith","Bridges","5929765557","1993-05-29","Transgender","libero@metusInnec.ca",39),(27,"Lareina","Haley","8974901969","2002-07-14","Male","mollis.Integer@velitduisemper.edu",98),(28,"Olympia","Cross","8954441407","2004-06-01","Female","dolor.vitae@accumsan.co.uk",12),(29,"Jesse","Case","7076693033","2015-01-31","Other","quis.lectus.Nullam@afeugiattellus.org",80),(30,"Lenore","Edwards","6183490798","1948-12-10","Other","lobortis@Proinvelnisl.co.uk",64);
+INSERT INTO `userprofile` (`userId`,`firstName`,`lastName`,`phoneNumber`,`DOB`,`sex`,`email`,`areaId`) VALUES (31,"Jin","Stephenson","7912877359","1960-09-11","Other","quam.vel.sapien@Etiam.com",54),(32,"Randall","Farmer","4861923609","2019-12-17","Female","non@eratEtiamvestibulum.co.uk",31),(33,"Hiroko","Noel","4594214698","2014-09-23","Female","a.arcu@aliquamarcuAliquam.co.uk",58),(34,"Simone","Church","1383375311","1989-12-29","Other","vestibulum@non.com",78),(35,"Julian","Armstrong","3956226062","1978-04-21","Male","ac.mattis.velit@necurnaet.edu",77),(36,"Rose","Hubbard","8982479514","1959-09-12","Other","leo@lectusNullamsuscipit.com",27),(37,"Halla","Preston","0010344173","1960-02-17","Transgender","risus.odio@Aliquamvulputate.edu",92),(38,"Keefe","Macias","7535776159","1986-02-27","Female","ipsum.primis.in@Crasvulputatevelit.org",90),(39,"Raven","Buchanan","4934964921","1975-06-18","Other","ac.feugiat@utlacus.com",74),(40,"Scarlett","Gonzales","3767488266","1987-09-16","Male","vestibulum.massa@augue.com",2);
+INSERT INTO `userprofile` (`userId`,`firstName`,`lastName`,`phoneNumber`,`DOB`,`sex`,`email`,`areaId`) VALUES (41,"Hall","Prince","4942421017","1999-08-30","Transgender","dui.augue.eu@Inmi.edu",64),(42,"Burke","Ray","9630394659","1950-02-03","Female","dui@suscipit.edu",38),(43,"Willow","Gomez","5300400881","1964-08-25","Other","sit.amet.risus@luctussitamet.co.uk",70),(44,"Kevin","Witt","2412430595","1985-07-14","Male","eleifend@amet.com",64),(45,"Raven","Mclean","1338633852","2006-09-03","Other","volutpat.ornare.facilisis@ami.edu",4),(46,"Edan","Aguirre","2751846909","2014-12-14","Male","tempus@Phasellus.com",38),(47,"Zoe","Flores","6102600332","1986-08-11","Other","vestibulum.neque.sed@purus.edu",1),(48,"Jamal","Luna","7984811307","2011-04-14","Female","nunc.In.at@amet.edu",92),(49,"Chastity","Harris","4706496331","1958-01-02","Other","nunc@leoin.com",23),(50,"Omar","Sandoval","8382088221","1948-06-15","Female","vel.arcu@ullamcorperDuisat.org",84);
+INSERT INTO `userprofile` (`userId`,`firstName`,`lastName`,`phoneNumber`,`DOB`,`sex`,`email`,`areaId`) VALUES (51,"Uma","Petty","8189858362","1988-03-21","Transgender","Fusce.mollis@lorem.com",24),(52,"Phelan","Gallagher","5485160686","2006-10-09","Male","sollicitudin.adipiscing@magnaCrasconvallis.ca",96),(53,"Jamalia","Foreman","7274224964","1948-04-24","Male","molestie@temporerat.org",63),(54,"Victoria","Richards","1715650424","1962-01-05","Female","Nulla@Namligulaelit.ca",72),(55,"Marah","Atkinson","9610219752","1968-12-02","Other","purus.in.molestie@quis.com",52),(56,"Shellie","Terrell","2308396023","1953-10-28","Transgender","sem.mollis@loremsitamet.net",62),(57,"Hashim","Randolph","9008299909","1971-06-19","Transgender","nec.ante.Maecenas@tristique.co.uk",71),(58,"Vivian","Briggs","0358108411","1952-03-02","Other","est.ac.mattis@lacus.org",3),(59,"Chaim","Wilkinson","9608037586","2002-06-28","Transgender","nec.imperdiet.nec@Utsagittis.net",56),(60,"Ivan","Ratliff","3511779779","1994-09-06","Other","odio@magnaDuis.ca",25);
+INSERT INTO `userprofile` (`userId`,`firstName`,`lastName`,`phoneNumber`,`DOB`,`sex`,`email`,`areaId`) VALUES (61,"Gillian","Mccormick","8414330629","1953-01-20","Male","tempus.risus.Donec@et.co.uk",27),(62,"Malcolm","Colon","4240853972","1970-04-14","Female","interdum.Nunc@nuncnullavulputate.co.uk",31),(63,"Hedwig","Figueroa","0645444306","2011-12-17","Female","commodo.ipsum.Suspendisse@elitAliquam.org",44),(64,"Doris","Buchanan","8255705923","2013-02-06","Male","lacinia@Intinciduntcongue.net",64),(65,"Ira","Carver","1033542969","1945-08-02","Male","risus.Nunc@augue.ca",14),(66,"Illana","Levy","2730642184","1974-06-14","Male","Phasellus@anequeNullam.com",30),(67,"Philip","Bailey","8581854515","1955-02-20","Male","enim.Mauris@elitpretium.co.uk",87),(68,"Samantha","Hanson","7080497834","1956-05-28","Male","pellentesque@placerategetvenenatis.ca",43),(69,"Kenneth","Pratt","0312526054","2017-05-07","Female","massa@pellentesqueafacilisis.org",33),(70,"Uriah","Benson","6418614197","1976-01-27","Female","eu.neque@elitNulla.co.uk",41);
+INSERT INTO `userprofile` (`userId`,`firstName`,`lastName`,`phoneNumber`,`DOB`,`sex`,`email`,`areaId`) VALUES (71,"Ezekiel","Torres","5419302071","2017-07-10","Male","ligula@malesuada.com",67),(72,"Jessica","Kent","3035970163","1999-04-05","Male","vel.mauris.Integer@turpis.net",53),(73,"Naomi","Gonzalez","1245640792","1983-03-04","Male","eleifend.vitae@ipsumDonec.ca",37),(74,"Steven","Miranda","1802677989","1993-07-13","Male","pharetra.nibh@sed.ca",34),(75,"Vera","Rivers","2931944473","1960-06-21","Male","Nullam.lobortis.quam@diam.ca",10),(76,"Dacey","Webster","9435656379","1988-03-19","Male","ultricies.ornare.elit@consectetueradipiscing.edu",60),(77,"Dara","Townsend","7129330342","1971-09-11","Other","eget@utquamvel.edu",90),(78,"Sandra","Snow","7866580787","1949-03-11","Male","penatibus.et@aliquet.ca",27),(79,"Gage","Conley","1411613713","1964-05-12","Other","arcu@aliquetnecimperdiet.org",10),(80,"Timon","Hammond","5693799874","1989-03-10","Other","purus.Duis@scelerisquenequeNullam.co.uk",48);
+INSERT INTO `userprofile` (`userId`,`firstName`,`lastName`,`phoneNumber`,`DOB`,`sex`,`email`,`areaId`) VALUES (81,"Ali","Murphy","7953511753","1984-03-22","Female","consectetuer.mauris.id@nec.ca",59),(82,"Malachi","Cooper","5446614728","2001-05-29","Other","sit.amet.ante@nisisem.co.uk",80),(83,"Galena","Baldwin","3230852892","1980-03-10","Male","auctor.velit.Aliquam@vulputateposuerevulputate.co.uk",96),(84,"Lisandra","Gardner","3690072335","1981-08-11","Male","vestibulum@a.com",87),(85,"Philip","Burton","3551826541","1969-02-19","Transgender","dui.nec@Aeneaneuismod.ca",65),(86,"Quamar","Shannon","1582981022","2016-08-23","Transgender","mi.enim.condimentum@lorem.com",96),(87,"Regina","Key","4976935100","1970-12-30","Transgender","ac@semper.org",23),(88,"Jeanette","Richmond","1997945900","2005-08-14","Male","accumsan.sed@vehicula.ca",50),(89,"Abigail","Anthony","5063866717","1946-10-01","Male","accumsan.laoreet.ipsum@velitdui.co.uk",58),(90,"Tatum","Owens","3071052753","1961-01-22","Female","eget@nonleo.edu",18);
+INSERT INTO `userprofile` (`userId`,`firstName`,`lastName`,`phoneNumber`,`DOB`,`sex`,`email`,`areaId`) VALUES (91,"Nora","Pace","2260341103","1974-03-23","Female","lobortis.nisi.nibh@famesacturpis.org",65),(92,"Yoshio","Bryan","3721289590","1993-02-13","Male","sed.sapien@Quisque.com",51),(93,"Talon","Henderson","7656141283","1948-12-24","Other","tempus@egestasDuis.com",14),(94,"Steel","Crane","9104287106","1951-06-08","Transgender","dignissim.magna.a@necurna.net",88),(95,"Roary","Stephenson","8135033148","1979-09-03","Transgender","ipsum.porta@orciconsectetuer.net",68),(96,"Demetrius","Avery","0172440208","1968-07-07","Other","risus.quis@justofaucibus.co.uk",39),(97,"Caldwell","Kelly","3555630473","2005-11-06","Transgender","elit@acmattis.net",77),(98,"Justina","Madden","8052390071","1951-07-04","Transgender","ligula@duilectus.ca",18),(99,"Iris","Noble","9031237440","1962-08-26","Transgender","euismod@variusultricesmauris.com",47),(100,"Mariam","Barber","1649845811","2016-07-30","Transgender","at.velit.Cras@Sedmolestie.org",7);
+
+
+INSERT INTO `ContactTracingTeam` (`empID`,`employeeName`,`phoneNumber`,`email`) VALUES (1,"Preston Mckee","7162555623","nec.ante.Maecenas@Nuncacsem.org"),(2,"Armando C. Stephens","6512862882","nulla.ante.iaculis@Nunc.co.uk"),(3,"Oprah E. Morris","9616951752","nunc@sagittisNullam.co.uk"),(4,"Burke Lindsay","4937024335","justo@disparturientmontes.org"),(5,"Stella Combs","3169565819","semper@rhoncus.edu"),(6,"Hu L. Alexander","8139566206","ornare@sedsapienNunc.co.uk"),(7,"Jade Rodriquez","9400289892","at.augue.id@urnaNullamlobortis.ca"),(8,"Halee Eaton","6759123395","lobortis.quam@risus.ca"),(9,"Kevin Deleon","2269545622","lobortis.mauris.Suspendisse@magnisdisparturient.org"),(10,"Ralph O. Buckley","6862531789","ac.mattis@lacusMaurisnon.edu");
+INSERT INTO `ContactTracingTeam` (`empID`,`employeeName`,`phoneNumber`,`email`) VALUES (11,"Brennan G. Hunter","6326356578","Aliquam.ultrices@Curabitur.ca"),(12,"Lysandra Wilkins","9639802751","ullamcorper.velit@parturientmontes.ca"),(13,"Whitney E. Obrien","4546474205","Lorem.ipsum.dolor@interdumNunc.org"),(14,"Tucker B. Carson","4421759738","et@ullamcorper.edu"),(15,"Hanna D. Fuller","2664929512","sem@liberoMorbiaccumsan.edu"),(16,"Amethyst E. Dixon","0765905764","blandit@mauris.edu"),(17,"Xanthus N. Santiago","7525023724","aliquet@ipsumdolorsit.ca"),(18,"Kasper W. Weeks","4446323705","non@nonnisi.edu"),(19,"Xavier G. Scott","6635122477","adipiscing.lobortis.risus@augue.net"),(20,"Sage Christensen","3038275709","sapien.Aenean@seddictum.edu");
+INSERT INTO `ContactTracingTeam` (`empID`,`employeeName`,`phoneNumber`,`email`) VALUES (21,"Rhona Jacobs","3731787589","tortor.Nunc@dui.ca"),(22,"Phyllis Ochoa","4314306766","nascetur.ridiculus@veliteget.org"),(23,"Adrienne F. Meyers","3414165673","sociis@mauris.co.uk"),(24,"Pandora Y. Valentine","0036870178","in.hendrerit.consectetuer@amet.org"),(25,"Omar S. Franklin","8526805526","ultricies.dignissim.lacus@non.org"),(26,"Virginia K. Elliott","7014544185","Nulla@nibhvulputate.ca"),(27,"Shellie Cochran","6253957871","vitae.mauris@acsem.edu"),(28,"Penelope Hughes","6816973473","Donec@a.net"),(29,"Tanya T. French","5913857085","vehicula.Pellentesque.tincidunt@Quisque.ca"),(30,"Farrah Burris","3039297419","sodales.purus.in@a.com");
+INSERT INTO `ContactTracingTeam` (`empID`,`employeeName`,`phoneNumber`,`email`) VALUES (31,"Rowan V. Jensen","8744990659","parturient.montes@interdumligulaeu.edu"),(32,"Cheyenne Bell","4003756873","a.scelerisque@sedleo.net"),(33,"Brody Richard","4253272970","urna.suscipit@dictum.com"),(34,"Carly Greer","4460656579","Sed.nulla@Maurisvestibulum.ca"),(35,"Lisandra X. Fulton","6081959728","elit@velit.net"),(36,"Acton Pennington","6575306660","Sed@Classaptenttaciti.ca"),(37,"Buffy Conway","5489516942","orci@dolorsit.com"),(38,"Aladdin Riggs","0783750030","risus.Donec@Proinnisl.co.uk"),(39,"Germane Forbes","0511274062","pharetra@sempertellusid.org"),(40,"Erasmus H. Blackburn","0074606550","felis@anteiaculis.co.uk");
+INSERT INTO `ContactTracingTeam` (`empID`,`employeeName`,`phoneNumber`,`email`) VALUES (41,"Brynn Vang","3521570050","tellus.Suspendisse.sed@nisl.edu"),(42,"Raphael A. Jensen","5275039880","sagittis@dictum.edu"),(43,"Madeson S. Salas","1233207498","Duis.mi.enim@uteros.edu"),(44,"Haley I. Nguyen","5873101229","nec.euismod@pedeSuspendissedui.com"),(45,"Leslie England","3544772114","Curae.Phasellus.ornare@tellusloremeu.net"),(46,"Hu K. Moses","6549052136","senectus@ultriciessem.ca"),(47,"Tate Henson","5194630068","Duis.sit@intempuseu.ca"),(48,"Ruby U. Travis","4910402561","id.risus@faucibusorci.co.uk"),(49,"Mason V. Wade","3597360188","dolor.nonummy.ac@augueacipsum.co.uk"),(50,"Kermit Luna","6668573111","lacus@malesuada.org");
+
+INSERT INTO `testFacility` (`testFacilityId`,`facilityName`,`licenseNumber`,`phoneNumber`,`address`,`zip`) VALUES (1,"Nulla Dignissim Company","49707812699","4184076515","P.O. Box 348, 4550 Nec, Av.","24659"),(2,"Ultricies Sem Company","55453177899","8691004767","Ap #560-7932 Tincidunt, Street","42219"),(3,"Lectus Ante Dictum Company","66881512799","3166998083","P.O. Box 162, 5890 A Ave","L9V 2S2"),(4,"Sed Diam Lorem Ltd","22546186599","5891950140","6473 In Avenue","36050"),(5,"Nunc Est Company","01682824499","5069296096","4779 Mauris, Ave","094672"),(6,"Ipsum Ltd","22525136199","7828747602","3615 Nibh St.","439563"),(7,"Eu Associates","06430335099","5790801096","P.O. Box 163, 4154 Ac Rd.","28311"),(8,"Lacus Vestibulum Incorporated","32686713899","8377954061","2187 Aliquam Rd.","77-223"),(9,"Dui Fusce Corporation","07318572399","0489806569","443-9571 Quis, Rd.","269917"),(10,"Quis Diam Industries","82674807299","1540041432","Ap #637-7034 Nullam Av.","34592"),(11,"Mauris Sagittis Incorporated","73559471299","3876057492","7512 Vivamus Rd.","961168"),(12,"Dapibus Quam Quis Company","58832184499","4919838343","P.O. Box 304, 3750 Sagittis St.","Z1329"),(13,"Dignissim Tempor Arcu Associates","21861307499","1842732373","P.O. Box 720, 8282 Imperdiet Street","70994"),(14,"Scelerisque Mollis Phasellus Limited","42244350699","2418027001","1304 Nulla Rd.","2869 NQ"),(15,"Vitae Aliquam PC","15228352799","2404591231","P.O. Box 827, 7311 Vulputate, Rd.","8811 SE"),(16,"Eu Company","68868498099","8209804140","4721 Ac Rd.","62188"),(17,"Aliquet Diam Company","27645317799","9409387875","364-4066 Vulputate, Rd.","01595"),(18,"A Scelerisque Sed Corp.","90620055799","7046044347","Ap #602-9086 Leo. St.","Z3487"),(19,"Lorem Incorporated","48586012799","3327343151","205 Consectetuer Road","84287"),(20,"Sed Associates","04943405799","9557736666","373-4989 Nulla Street","6755"),(21,"Phasellus Industries","03508416699","4732998362","312-9715 Sit Ave","316909"),(22,"Elit Consulting","85905401699","5268958342","Ap #782-7101 Dui, St.","28046"),(23,"Eget Ipsum Associates","86360689399","8907486285","P.O. Box 321, 9187 Sapien, St.","13343"),(24,"Nunc PC","61225009499","5055483634","Ap #402-4759 A, Av.","15874"),(25,"Facilisis Magna Tellus Corp.","32995632499","8703695937","P.O. Box 927, 1514 Mauris Avenue","7454"),(26,"Pede Praesent Institute","92626832899","0468968201","P.O. Box 262, 9278 Euismod St.","44104"),(27,"Pellentesque A Company","44620181599","1293915504","Ap #924-6339 Et St.","959558"),(28,"Malesuada Fames Associates","31232424599","1588391978","P.O. Box 458, 2782 Egestas. Ave","91867"),(29,"Eu Consulting","87750273699","7744751316","858-3125 Tempus Av.","XT1C 7IU"),(30,"Pellentesque A PC","89746837499","6044840568","280-1306 Sollicitudin Rd.","7979"),(31,"Interdum Sed Foundation","65493015099","8672375499","3428 Turpis. Rd.","96263"),(32,"Tempus Company","99781575399","9254072762","338-8790 Proin Rd.","302371"),(33,"Elementum Sem Vitae Corporation","23803045899","5760643449","P.O. Box 615, 8502 Rutrum St.","741599"),(34,"Ultrices Sit Amet Industries","56668045499","3450652090","P.O. Box 928, 305 At, Av.","6272"),(35,"Neque Incorporated","42395667499","2195436996","356-3674 Et Av.","401813"),(36,"Dui Lectus Rutrum Industries","19322144699","1303960584","8890 Non, Rd.","100364"),(37,"Non Corp.","69477497399","6955127930","2909 Senectus Ave","18440-61652"),(38,"Placerat Augue Inc.","53515743099","2764759553","P.O. Box 610, 8613 Dolor. Avenue","21416"),(39,"Sollicitudin LLC","74358714599","5597115601","P.O. Box 905, 6424 Nec Rd.","11616"),(40,"Dui Fusce Limited","86610825499","3142872406","9890 Faucibus Av.","640091"),(41,"Sed Pede Limited","23724805199","9919844598","2327 Id Rd.","8725"),(42,"Massa Rutrum Magna Associates","89962126299","8440111271","1615 Malesuada Ave","74514"),(43,"Nunc PC","38676303699","9616477610","364-5243 Nascetur Road","03697"),(44,"Morbi Inc.","91656706099","6017264438","Ap #932-5931 Egestas St.","24515"),(45,"Phasellus Vitae LLP","85940178599","2613643614","Ap #125-3546 Suspendisse Av.","57537"),(46,"Ipsum Ac Incorporated","69955307199","5051408864","Ap #605-418 Sed Rd.","8152"),(47,"Mauris Sagittis Placerat Industries","96407630899","1781509677","P.O. Box 830, 5839 Sed Av.","94-650"),(48,"Etiam Imperdiet Company","89476149599","8580062974","906 Porttitor Rd.","0250 AT"),(49,"Aliquam Tincidunt Nunc Institute","92366527199","5334630687","652-7862 Fringilla Rd.","33-138"),(50,"Vitae Foundation","26783502399","2288233937","7033 Id, Avenue","12303"),(51,"Massa Rutrum Magna Institute","22318315199","7809691452","4574 Interdum. St.","5197"),(52,"Vulputate Eu Odio LLC","91542680499","9380445716","P.O. Box 711, 1285 Nunc St.","3154"),(53,"Mi Eleifend Inc.","18631711999","4874903610","834-5938 A Rd.","117000"),(54,"Malesuada Vel Corp.","00479758099","3874886102","7372 Phasellus Ave","140591"),(55,"Et Magnis LLC","65715465399","5708972909","6073 Sem Av.","07220"),(56,"Fusce Associates","55303009499","5853955889","Ap #913-1123 Nec Street","06866"),(57,"Arcu Aliquam Ultrices LLP","29455157199","4642502764","Ap #292-5538 Lorem St.","18561"),(58,"Morbi Tristique Senectus Industries","19933408099","5735923715","P.O. Box 503, 1778 Metus Road","51116"),(59,"Ut LLP","45834640799","5795369088","Ap #289-8431 Massa. Ave","9040"),(60,"Aliquam Tincidunt Inc.","72775370399","2763349378","P.O. Box 653, 7844 Integer Street","Z4851"),(61,"Nulla Magna Malesuada Foundation","81763415399","3642344497","694-2934 Leo Av.","33892"),(62,"Purus Maecenas Ltd","38427172999","3493173844","Ap #386-3681 Vel, St.","54726"),(63,"Ut Foundation","46445999499","9361460684","8621 Nunc Rd.","80343"),(64,"Dictum Phasellus In Associates","36968167499","2565977941","8085 Mauris, Ave","00244-41136"),(65,"Rutrum LLP","45645455499","7632536106","Ap #840-2040 Interdum. St.","12409"),(66,"Eu Lacus Corp.","17423539699","5812230244","Ap #580-4251 Magna St.","I8 0RI"),(67,"Egestas Fusce Aliquet Ltd","28468997299","7467527654","7828 Nulla Avenue","13401-49345"),(68,"Cursus Limited","11659912399","7587016669","6377 Leo Road","28978"),(69,"Ut Pellentesque Eget LLC","33552475099","4169191070","P.O. Box 537, 246 Eleifend Rd.","39785"),(70,"Amet Lorem Semper PC","25542786099","1338051617","2728 Lorem Street","595078"),(71,"Quis Tristique Ac Industries","22990255499","9219496234","433-8486 Nisi Rd.","60707"),(72,"Sem Company","24275675299","7978485905","3913 Facilisis. St.","43348"),(73,"Aenean Massa LLP","90653298899","1853744808","Ap #868-8777 Lorem St.","256198"),(74,"Volutpat LLP","31609765899","9415526532","7656 Amet, Avenue","17171"),(75,"Lacinia Mattis PC","78741032499","6097537908","7084 Pellentesque Rd.","3637"),(76,"At Associates","91487408899","2603703539","P.O. Box 773, 9046 Nascetur Road","12483"),(77,"Turpis Nec Corporation","99969642699","5128385273","P.O. Box 295, 8330 Mauris St.","11910"),(78,"Risus Donec Associates","58253122399","8080035793","Ap #343-4519 Enim Av.","913060"),(79,"Sed Auctor Institute","01831670399","7033875820","527-6006 Sed Av.","659454"),(80,"Consequat Foundation","51442924699","1599538128","P.O. Box 749, 2157 Pede Rd.","L7G 8E6"),(81,"Tempor Lorem LLP","61488885799","8112701439","P.O. Box 249, 2388 Massa Ave","6039"),(82,"Neque Venenatis Lacus LLP","70705175299","7390647232","8950 Non, Ave","8767"),(83,"Pede Associates","33792877599","3234199116","P.O. Box 517, 8617 Magna. St.","G03 2QF"),(84,"Non Ltd","98206554699","0696138366","9070 Et, Street","FS96 3YZ"),(85,"Dolor Corp.","99731255799","7287700102","909-4114 Suspendisse Ave","6198 VN"),(86,"Lectus LLC","15868011999","1211540435","947-4980 Lacus. Avenue","91775-704"),(87,"Augue Associates","74718337899","6607598015","3144 Vel Ave","50151"),(88,"In Faucibus Morbi Corporation","05556375899","5168933683","Ap #913-8025 Rutrum Rd.","01-840"),(89,"Blandit Nam Nulla Ltd","27357984099","5578898472","8434 In Avenue","2988"),(90,"Senectus Company","36817070399","3625015926","P.O. Box 107, 662 Sit St.","15028"),(91,"Eu Inc.","68314984099","3956715781","5762 Natoque Ave","42163-043"),(92,"Diam Nunc Ullamcorper Foundation","01404157599","7755778298","P.O. Box 339, 7141 Cras St.","11615"),(93,"Integer Incorporated","92770022899","0647697433","P.O. Box 315, 2110 Rutrum Avenue","849432"),(94,"Ullamcorper Velit In Associates","57636172299","0913720158","P.O. Box 904, 8734 Etiam St.","946538"),(95,"Amet Ante Industries","69692389499","4778265699","P.O. Box 544, 4835 Vel St.","016877"),(96,"Vitae Ltd","98980642299","6646869492","P.O. Box 231, 4009 Dignissim St.","76854"),(97,"Faucibus Industries","09443519599","2623934649","Ap #482-2820 Euismod St.","754580"),(98,"Sodales Purus In Corporation","05597902999","4586059244","9404 Vel St.","5781"),(99,"Sit Associates","42792153299","6597514111","774-272 Aliquam Avenue","331609"),(100,"Volutpat Nunc Institute","29449024899","8882199791","Ap #346-5250 Morbi St.","544381");
+
+INSERT INTO `caseLog` (`caseID`,`currentStatus`,`empID`) VALUES (1,"Open",44),(2,"Assigned",42),(3,"Closed",25),(4,"Assigned",20),(5,"WorkInProgress",28),(6,"WorkInProgress",37),(7,"WorkInProgress",36),(8,"Assigned",15),(9,"WorkInProgress",4),(10,"WorkInProgress",21),(11,"WorkInProgress",41),(12,"Closed",47),(13,"WorkInProgress",4),(14,"Closed",7),(15,"Assigned",43),(16,"WorkInProgress",9),(17,"Closed",48),(18,"Closed",41),(19,"WorkInProgress",6),(20,"Closed",31),(21,"Assigned",31),(22,"WorkInProgress",17),(23,"Open",29),(24,"WorkInProgress",29),(25,"Closed",27),(26,"Assigned",10),(27,"Assigned",47),(28,"Assigned",5),(29,"Closed",33),(30,"Open",10),(31,"Open",35),(32,"Closed",35),(33,"Open",1),(34,"Closed",8),(35,"Open",31),(36,"Open",16),(37,"WorkInProgress",25),(38,"WorkInProgress",3),(39,"Closed",39),(40,"Open",23),(41,"Assigned",10),(42,"WorkInProgress",23),(43,"WorkInProgress",39),(44,"Open",5),(45,"WorkInProgress",44),(46,"Assigned",22),(47,"WorkInProgress",3),(48,"Open",27),(49,"WorkInProgress",10),(50,"WorkInProgress",21),(51,"Open",18),(52,"Assigned",30),(53,"WorkInProgress",50),(54,"Assigned",2),(55,"WorkInProgress",4),(56,"Open",48),(57,"WorkInProgress",4),(58,"Closed",11),(59,"WorkInProgress",12),(60,"Open",14),(61,"Open",39),(62,"Open",36),(63,"WorkInProgress",42),(64,"Closed",24),(65,"WorkInProgress",13),(66,"Closed",13),(67,"Open",15),(68,"WorkInProgress",47),(69,"Open",20),(70,"Closed",20),(71,"WorkInProgress",18),(72,"Closed",10),(73,"WorkInProgress",48),(74,"Open",33),(75,"Closed",39),(76,"WorkInProgress",45),(77,"Closed",16),(78,"Open",34),(79,"Closed",15),(80,"Assigned",40),(81,"Closed",17),(82,"Closed",32),(83,"Open",31),(84,"Closed",12),(85,"Open",44),(86,"Assigned",14),(87,"Assigned",22),(88,"Closed",14),(89,"Closed",13),(90,"Closed",3),(91,"Assigned",1),(92,"Assigned",30),(93,"WorkInProgress",8),(94,"Closed",18),(95,"Assigned",39),(96,"Closed",1),(97,"Closed",6),(98,"WorkInProgress",7),(99,"Open",4),(100,"Assigned",19);
+
+INSERT INTO `TestReport` (`testReportID`,`userID`,`testFacilityID`,`testDate`,`resultDate`,`result`,`caseID`,`device`) VALUES (1,89,92,"2020-07-18","2020-05-02","Positive",8,"m2000 RealTime System"),(2,91,62,"2020-07-03","2020-07-01","Positive",69,"Architect i1000SR"),(3,97,57,"2020-07-15","2020-06-08","Positive",6,"m2000 RealTime System"),(4,16,81,"2020-04-25","2020-05-04","Negative",4,"qPCR"),(5,67,75,"2020-03-24","2020-06-01","Negative",73,"Architect i1000SR"),(6,60,87,"2020-06-10","2020-05-28","Positive",98,"Architect i1000SR"),(7,42,11,"2020-04-07","2020-04-10","Negative",57,"Architect i1000SR"),(8,77,36,"2020-06-30","2020-06-29","Negative",64,"m2000 RealTime System"),(9,28,12,"2020-06-19","2020-05-25","Negative",96,"Architect i1000SR"),(10,20,5,"2020-06-11","2020-05-12","Negative",100,"m2000 RealTime System");
+INSERT INTO `TestReport` (`testReportID`,`userID`,`testFacilityID`,`testDate`,`resultDate`,`result`,`caseID`,`device`) VALUES (11,86,72,"2020-07-10","2020-04-08","Negative",95,"qPCR"),(12,59,27,"2020-07-15","2020-04-01","Positive",90,"Architect i1000SR"),(13,22,94,"2020-07-14","2020-07-01","Positive",31,"Architect i1000SR"),(14,19,70,"2020-06-10","2020-04-19","Negative",80,"qPCR"),(15,55,66,"2020-04-17","2020-04-17","Negative",49,"qPCR"),(16,67,54,"2020-06-22","2020-05-09","Positive",1,"m2000 RealTime System"),(17,60,99,"2020-07-14","2020-05-14","Negative",36,"m2000 RealTime System"),(18,89,52,"2020-05-17","2020-05-24","Negative",9,"m2000 RealTime System"),(19,63,31,"2020-07-16","2020-04-19","Positive",67,"qPCR"),(20,44,83,"2020-06-03","2020-07-12","Positive",51,"qPCR");
+INSERT INTO `TestReport` (`testReportID`,`userID`,`testFacilityID`,`testDate`,`resultDate`,`result`,`caseID`,`device`) VALUES (21,38,11,"2020-04-12","2020-07-08","Negative",54,"m2000 RealTime System"),(22,38,6,"2020-05-26","2020-06-09","Positive",8,"m2000 RealTime System"),(23,36,42,"2020-04-06","2020-05-11","Positive",78,"m2000 RealTime System"),(24,54,63,"2020-06-02","2020-07-18","Negative",72,"m2000 RealTime System"),(25,60,22,"2020-05-02","2020-04-07","Positive",36,"Architect i1000SR"),(26,40,81,"2020-06-06","2020-05-21","Positive",13,"Architect i1000SR"),(27,76,27,"2020-05-07","2020-05-01","Positive",62,"Architect i1000SR"),(28,41,34,"2020-05-09","2020-05-17","Negative",99,"m2000 RealTime System"),(29,56,40,"2020-05-17","2020-06-18","Negative",18,"Architect i1000SR"),(30,64,20,"2020-06-05","2020-03-23","Negative",13,"Architect i1000SR");
+INSERT INTO `TestReport` (`testReportID`,`userID`,`testFacilityID`,`testDate`,`resultDate`,`result`,`caseID`,`device`) VALUES (31,14,71,"2020-06-28","2020-04-11","Positive",93,"qPCR"),(32,67,15,"2020-05-20","2020-05-10","Positive",94,"m2000 RealTime System"),(33,61,70,"2020-03-25","2020-04-13","Negative",78,"qPCR"),(34,48,67,"2020-06-29","2020-07-08","Negative",38,"qPCR"),(35,24,39,"2020-05-05","2020-07-19","Positive",49,"Architect i1000SR"),(36,51,46,"2020-05-27","2020-06-02","Negative",87,"Architect i1000SR"),(37,68,25,"2020-05-07","2020-04-16","Negative",34,"Architect i1000SR"),(38,49,76,"2020-07-04","2020-03-29","Negative",1,"m2000 RealTime System"),(39,75,60,"2020-06-28","2020-07-11","Positive",66,"qPCR"),(40,18,23,"2020-07-16","2020-04-23","Negative",72,"Architect i1000SR");
+INSERT INTO `TestReport` (`testReportID`,`userID`,`testFacilityID`,`testDate`,`resultDate`,`result`,`caseID`,`device`) VALUES (41,65,69,"2020-04-15","2020-07-10","Positive",66,"Architect i1000SR"),(42,67,55,"2020-04-15","2020-07-03","Negative",63,"m2000 RealTime System"),(43,32,11,"2020-05-17","2020-04-14","Negative",22,"Architect i1000SR"),(44,62,61,"2020-06-27","2020-04-23","Negative",10,"qPCR"),(45,35,27,"2020-07-03","2020-06-19","Positive",41,"m2000 RealTime System"),(46,64,5,"2020-06-13","2020-06-03","Negative",28,"qPCR"),(47,69,70,"2020-06-16","2020-06-04","Negative",66,"qPCR"),(48,27,85,"2020-03-25","2020-04-11","Negative",38,"Architect i1000SR"),(49,37,73,"2020-06-02","2020-06-03","Positive",40,"Architect i1000SR"),(50,97,54,"2020-07-10","2020-03-31","Negative",40,"qPCR");
+INSERT INTO `TestReport` (`testReportID`,`userID`,`testFacilityID`,`testDate`,`resultDate`,`result`,`caseID`,`device`) VALUES (51,68,26,"2020-07-17","2020-06-16","Negative",40,"m2000 RealTime System"),(52,59,28,"2020-06-02","2020-04-04","Positive",40,"qPCR"),(53,37,31,"2020-04-07","2020-06-23","Negative",49,"Architect i1000SR"),(54,82,95,"2020-06-11","2020-05-01","Negative",74,"m2000 RealTime System"),(55,47,27,"2020-07-06","2020-05-22","Negative",42,"m2000 RealTime System"),(56,91,32,"2020-05-24","2020-06-10","Negative",30,"Architect i1000SR"),(57,8,100,"2020-05-12","2020-03-29","Negative",13,"Architect i1000SR"),(58,37,96,"2020-05-22","2020-03-24","Negative",83,"m2000 RealTime System"),(59,42,39,"2020-05-18","2020-04-14","Positive",89,"Architect i1000SR"),(60,2,62,"2020-04-20","2020-04-25","Positive",61,"qPCR");
+INSERT INTO `TestReport` (`testReportID`,`userID`,`testFacilityID`,`testDate`,`resultDate`,`result`,`caseID`,`device`) VALUES (61,56,11,"2020-06-01","2020-05-31","Negative",53,"Architect i1000SR"),(62,71,99,"2020-05-15","2020-04-27","Negative",56,"qPCR"),(63,34,7,"2020-06-08","2020-04-14","Negative",25,"qPCR"),(64,18,80,"2020-07-06","2020-03-26","Negative",79,"m2000 RealTime System"),(65,89,26,"2020-06-18","2020-06-28","Negative",1,"m2000 RealTime System"),(66,36,76,"2020-07-06","2020-04-11","Positive",61,"m2000 RealTime System"),(67,17,4,"2020-05-25","2020-04-02","Negative",14,"qPCR"),(68,49,57,"2020-04-01","2020-07-13","Negative",39,"m2000 RealTime System"),(69,4,83,"2020-03-29","2020-06-18","Positive",55,"Architect i1000SR"),(70,96,98,"2020-03-26","2020-06-24","Positive",64,"m2000 RealTime System");
+INSERT INTO `TestReport` (`testReportID`,`userID`,`testFacilityID`,`testDate`,`resultDate`,`result`,`caseID`,`device`) VALUES (71,6,11,"2020-05-08","2020-06-18","Positive",80,"qPCR"),(72,55,64,"2020-06-22","2020-05-08","Positive",34,"Architect i1000SR"),(73,58,16,"2020-06-20","2020-07-09","Negative",18,"m2000 RealTime System"),(74,74,79,"2020-06-26","2020-04-06","Negative",18,"m2000 RealTime System"),(75,69,98,"2020-05-06","2020-03-24","Negative",50,"m2000 RealTime System"),(76,69,72,"2020-04-18","2020-04-26","Negative",15,"qPCR"),(77,36,44,"2020-06-22","2020-06-13","Positive",100,"qPCR"),(78,76,51,"2020-05-30","2020-07-10","Negative",65,"Architect i1000SR"),(79,63,22,"2020-07-11","2020-05-17","Negative",57,"m2000 RealTime System"),(80,22,44,"2020-07-17","2020-05-19","Positive",93,"m2000 RealTime System");
+INSERT INTO `TestReport` (`testReportID`,`userID`,`testFacilityID`,`testDate`,`resultDate`,`result`,`caseID`,`device`) VALUES (81,5,27,"2020-06-27","2020-06-09","Negative",21,"m2000 RealTime System"),(82,98,61,"2020-04-17","2020-07-05","Negative",90,"qPCR"),(83,11,21,"2020-04-04","2020-06-22","Negative",87,"qPCR"),(84,29,92,"2020-05-26","2020-03-25","Positive",20,"m2000 RealTime System"),(85,3,15,"2020-04-27","2020-06-05","Positive",37,"m2000 RealTime System"),(86,31,73,"2020-05-19","2020-04-27","Negative",82,"Architect i1000SR"),(87,33,81,"2020-05-06","2020-05-22","Negative",68,"m2000 RealTime System"),(88,32,45,"2020-06-06","2020-05-17","Positive",91,"qPCR"),(89,45,10,"2020-07-04","2020-05-19","Negative",66,"Architect i1000SR"),(90,74,41,"2020-05-19","2020-06-14","Positive",3,"qPCR");
+
+INSERT INTO `TestReport` (`testReportID`,`userID`,`testFacilityID`,`testDate`,`resultDate`,`result`,`caseID`,`device`) VALUES (91,83,62,"2020-06-14","2020-06-25","Negative",74,"m2000 RealTime System"),(92,73,99,"2020-07-04","2020-04-25","Negative",20,"qPCR"),(93,84,46,"2020-06-20","2020-05-16","Positive",97,"m2000 RealTime System"),(94,1,18,"2020-05-23","2020-05-10","Positive",100,"Architect i1000SR"),(95,81,83,"2020-05-18","2020-03-28","Negative",69,"Architect i1000SR"),(96,76,1,"2020-04-20","2020-06-01","Negative",31,"qPCR"),(97,80,94,"2020-04-22","2020-06-24","Positive",89,"Architect i1000SR"),(98,89,22,"2020-07-02","2020-05-28","Positive",21,"qPCR"),(99,70,93,"2020-06-24","2020-07-09","Positive",62,"m2000 RealTime System"),(100,63,16,"2020-06-02","2020-05-16","Negative",9,"qPCR");
+
+INSERT INTO `contact` (`contactID`,`user1Id`,`user2Id`,`riskFactor`,`DateOfContact`) VALUES (1,69,63,3,"2020-06-19"),(2,77,14,3,"2020-03-02"),(3,7,31,3,"2020-07-11"),(4,55,66,1,"2020-05-06"),(5,63,96,5,"2020-04-06"),(6,14,69,4,"2020-04-05"),(7,48,18,2,"2020-06-10"),(8,91,26,4,"2020-07-08"),(9,7,28,4,"2020-06-06"),(10,9,49,3,"2020-05-15"),(11,36,29,5,"2020-05-22"),(12,89,74,2,"2020-03-16"),(13,50,11,0,"2020-07-12"),(14,79,55,0,"2020-03-22"),(15,24,33,4,"2020-03-25"),(16,68,36,4,"2020-04-01"),(17,64,31,2,"2020-04-24"),(18,8,17,3,"2020-04-14"),(19,12,75,4,"2020-05-09"),(20,67,27,0,"2020-04-30"),(21,60,11,3,"2020-03-21"),(22,31,99,5,"2020-05-20"),(23,31,33,5,"2020-04-19"),(24,45,84,2,"2020-06-18"),(25,28,8,3,"2020-05-05"),(26,70,64,5,"2020-04-01"),(27,97,13,1,"2020-03-01"),(28,13,63,3,"2020-03-21"),(29,98,57,3,"2020-05-21"),(30,18,69,1,"2020-04-28"),(31,18,87,0,"2020-04-11"),(32,38,57,1,"2020-07-12"),(33,2,60,1,"2020-06-07"),(34,62,22,0,"2020-05-18"),(35,14,73,0,"2020-07-05"),(36,44,43,5,"2020-03-13"),(37,1,6,4,"2020-07-07"),(38,96,6,4,"2020-07-10"),(39,44,32,2,"2020-03-24"),(40,43,31,2,"2020-07-13"),(41,45,84,5,"2020-05-26"),(42,4,54,0,"2020-06-23"),(43,91,33,2,"2020-06-14"),(44,50,29,4,"2020-06-22"),(45,9,6,5,"2020-05-31"),(46,83,65,1,"2020-06-13"),(47,6,10,3,"2020-04-06"),(48,62,70,5,"2020-05-27"),(49,9,100,5,"2020-03-21"),(50,79,46,0,"2020-03-26"),(51,17,50,1,"2020-05-14"),(52,36,30,5,"2020-06-10"),(53,61,68,1,"2020-05-17"),(54,44,42,2,"2020-06-05"),(55,16,68,3,"2020-04-02"),(56,30,87,4,"2020-06-13"),(57,2,31,1,"2020-07-13"),(58,63,28,0,"2020-06-27"),(59,65,68,2,"2020-04-21"),(60,16,83,0,"2020-07-13"),(61,95,74,0,"2020-05-22"),(62,20,27,1,"2020-07-01"),(63,92,31,4,"2020-07-09"),(64,61,26,0,"2020-07-02"),(65,10,66,4,"2020-03-01"),(66,77,19,5,"2020-06-13"),(67,99,56,2,"2020-05-14"),(68,79,56,0,"2020-04-12"),(69,91,88,5,"2020-04-27"),(70,42,74,1,"2020-04-28"),(71,24,78,5,"2020-06-18"),(72,15,31,1,"2020-03-03"),(73,47,98,5,"2020-04-25"),(74,1,30,1,"2020-04-14"),(75,63,23,0,"2020-04-22"),(76,48,45,5,"2020-04-29"),(77,11,86,5,"2020-05-31"),(78,37,31,3,"2020-03-10"),(79,52,14,3,"2020-05-07"),(80,74,68,1,"2020-03-03"),(81,39,77,4,"2020-07-10"),(82,9,87,3,"2020-04-19"),(83,69,98,2,"2020-05-03"),(84,70,7,0,"2020-07-16"),(85,27,40,1,"2020-03-19"),(86,50,93,4,"2020-04-08"),(87,85,3,5,"2020-03-27"),(88,81,80,0,"2020-06-10"),(89,36,35,5,"2020-04-09"),(90,95,35,2,"2020-05-08"),(91,97,17,0,"2020-07-14"),(92,65,46,0,"2020-03-27"),(93,81,38,3,"2020-04-24"),(94,13,72,4,"2020-04-19"),(95,32,23,4,"2020-04-11"),(96,71,18,4,"2020-05-21"),(97,5,77,1,"2020-05-21"),(98,15,99,0,"2020-03-01"),(99,45,10,4,"2020-03-13"),(100,74,97,3,"2020-03-01");
+
+INSERT INTO `Investigation` (`investigationID`,`contactID`,`caseID`) VALUES (1,35,79),(2,82,84),(3,78,87),(4,62,100),(5,43,10),(6,10,67),(7,52,56),(8,58,99),(9,88,93),(10,59,84);
+INSERT INTO `Investigation` (`investigationID`,`contactID`,`caseID`) VALUES (11,36,52),(12,57,77),(13,49,36),(14,29,56),(15,10,49),(16,32,50),(17,5,19),(18,66,13),(19,40,76),(20,72,79);
+INSERT INTO `Investigation` (`investigationID`,`contactID`,`caseID`) VALUES (21,8,74),(22,62,60),(23,36,79),(24,100,49),(25,14,90),(26,42,86),(27,74,99),(28,37,26),(29,95,62),(30,38,58);
+INSERT INTO `Investigation` (`investigationID`,`contactID`,`caseID`) VALUES (31,26,76),(32,71,100),(33,11,33),(34,4,45),(35,94,64),(36,34,98),(37,63,38),(38,30,70),(39,59,18),(40,94,19);
+INSERT INTO `Investigation` (`investigationID`,`contactID`,`caseID`) VALUES (41,22,63),(42,16,3),(43,39,70),(44,3,21),(45,87,42),(46,37,83),(47,2,62),(48,94,89),(49,67,16),(50,38,97);
+INSERT INTO `Investigation` (`investigationID`,`contactID`,`caseID`) VALUES (51,2,30),(52,68,76),(53,50,6),(54,58,12),(55,73,77),(56,96,93),(57,82,83),(58,74,67),(59,5,90),(60,96,24);
+INSERT INTO `Investigation` (`investigationID`,`contactID`,`caseID`) VALUES (61,3,17),(62,12,12),(63,73,31),(64,35,83),(65,53,89),(66,91,89),(67,77,1),(68,88,63),(69,90,12),(70,55,89);
+INSERT INTO `Investigation` (`investigationID`,`contactID`,`caseID`) VALUES (71,41,14),(72,1,3),(73,45,18),(74,85,44),(75,60,98),(76,13,93),(77,88,94),(78,73,58),(79,6,91),(80,82,40);
+INSERT INTO `Investigation` (`investigationID`,`contactID`,`caseID`) VALUES (81,97,77),(82,84,8),(83,11,99),(84,46,54),(85,31,79),(86,95,12),(87,98,22),(88,77,44),(89,41,31),(90,82,70);
+INSERT INTO `Investigation` (`investigationID`,`contactID`,`caseID`) VALUES (91,66,67),(92,74,9),(93,92,91),(94,60,84),(95,10,16),(96,25,44),(97,23,8),(98,30,36),(99,94,55),(100,82,32);
+
+INSERT INTO `caseLogArea` (`caseLogAreaID`,`caseID`,`areaID`) VALUES (1,62,70),(2,58,27),(3,91,61),(4,42,68),(5,18,14),(6,48,84),(7,42,65),(8,45,53),(9,82,42),(10,28,7),(11,32,94),(12,57,72),(13,90,57),(14,25,97),(15,70,97),(16,62,8),(17,90,45),(18,74,56),(19,13,36),(20,83,37),(21,3,57),(22,97,100),(23,4,2),(24,33,29),(25,38,89),(26,35,53),(27,76,83),(28,36,60),(29,3,31),(30,23,100),(31,2,18),(32,35,30),(33,26,78),(34,75,42),(35,32,5),(36,5,14),(37,70,44),(38,98,67),(39,36,91),(40,38,80),(41,60,22),(42,57,87),(43,47,53),(44,89,23),(45,85,26),(46,78,21),(47,95,5),(48,67,41),(49,97,100),(50,22,53),(51,57,85),(52,89,81),(53,49,96),(54,30,28),(55,9,64),(56,82,84),(57,27,31),(58,66,72),(59,5,96),(60,94,63),(61,67,76),(62,87,22),(63,38,65),(64,95,33),(65,84,67),(66,42,29),(67,48,30),(68,35,99),(69,70,92),(70,96,77),(71,34,16),(72,25,56),(73,60,75),(74,29,30),(75,19,49),(76,59,12),(77,37,10),(78,80,25),(79,55,89),(80,24,8),(81,91,4),(82,58,24),(83,100,55),(84,81,37),(85,88,85),(86,46,15),(87,5,7),(88,9,41),(89,9,34),(90,85,46),(91,43,78),(92,96,53),(93,1,88),(94,57,18),(95,8,52),(96,61,43),(97,38,6),(98,69,24),(99,61,96),(100,73,73);
+
+
+
+
+```
+
+
+
+
+
+
+
+### CONNECT DATABASE TO R
+
+```{r}
+localuserpassword <- "*********"
+
+library(RMariaDB)
+
+ctDb <- dbConnect(RMariaDB::MariaDB(), user='root', password=localuserpassword, dbname='ContractTracing', host='localhost')
+dbListTables(ctDb)
+
+```
+
+
+### Sample Table Data with inserted records
+
+TESTREPORT DATA
+
+```{r}
+
+query<-paste("SELECT * FROM TESTREPORT")
+rs = dbSendQuery(ctDb,query)
+dbRows<-dbFetch(rs)
+dbRows
+
+```
+
+
+
+
+
+### 5.	Data retrievals into R that show that the database functions properly.
+
+#### 1.	Complex Search Criterion 
+
+##### Question - Find out the contact tracing trail for all the people who have tested positive for the month of April 2020, with their case file status as "Open". 
+
+
+##### Result:
+
+
+```{r}
+query<-paste("with recursive tracing (contactId, user1Id, user2Id) as (
+  select     contactId,
+             user1Id,
+             user2Id
+  from       CONTACT
+  where      user1Id IN (SELECT PERSON.userId FROM PERSON,TestReport,CaseLog 
+							WHERE PERSON.userId=TestReport.userId AND TestReport.caseID=CaseLog.caseID 
+                            AND TestReport.result='Positive' 
+                            AND CaseLog.currentStatus='Open' 
+                            AND testDate BETWEEN '2020-04-01' AND '2020-04-30')
+  union all
+  select     c.contactId,
+             c.user1Id,
+             c.user2Id
+  from       CONTACT c
+  inner join tracing
+          on c.user1Id = tracing.user2Id
+)
+select * from tracing;")
+rs = dbSendQuery(ctDb,query)
+dbRows<-dbFetch(rs)
+dbRows
+```
+
+
+
+#### 2.	Clause Query
+		
+##### Question - Find the countries with the number of cases more than or equal to 3
+
+##### Result – 
+
+
+
+```{r}
+query<-paste("	SELECT  area.country, count(CaseLog.caseID) as 'Number of Cases'
+ FROM 	CaseLog 
+INNER JOIN CaseLogArea on CaseLogArea.caseid = CaseLog.caseid
+INNER JOIN Area on Area.areaID = CaseLogArea.areaID 	
+GROUP BY Area.country having count(CaseLog.caseID) >= 3;")
+rs = dbSendQuery(ctDb,query)
+dbRows<-dbFetch(rs)
+dbRows
+```
+
+
+#### 3.	Join of 3 tables
+
+##### Question - Find out the number of females tested positive.
+
+
+
+##### Result – 
+
+
+
+```{r}
+
+query<-paste("	select count(TestReport.result) as 'Number of Females with Positive Cases' from Person inner join USERPROFILE on person.userId = USERPROFILE.userId inner join TestReport on TestReport.userID = PERSON.userID where TestReport.result='Positive' and USERPROFILE.sex='Female' Group by USERPROFILE.sex;")
+
+rs = dbSendQuery(ctDb,query)
+dbRows<-dbFetch(rs)
+dbRows
+
+```
+
+
+
+#### 4.	Sub Query
+
+##### Question - Find the people who are currently infected and were working in healthcare.
+
+##### Result – 
+
+
+
+```{r}
+query<-paste("	SELECT userId from PERSON where userType IN  (select userType from PERSON where employedInHealthCare='Yes' and userType='Infected')	")
+rs = dbSendQuery(ctDb,query)
+dbRows<-dbFetch(rs)
+dbRows
+```
+
+
+
+#### 5.	Query of choice 
+
+##### Question - List the Employee IDs and the number of cases of 					those employees with more than 1 case in 'Work in progress' status.
+
+##### Result – 
+
+
+
+```{r}
+query<-paste("	SELECT ContactTracingTeam.empID,COUNT(CaseLog.caseID) as 'Number of Cases' from ContactTracingTeam LEFT JOIN CaseLog ON CaseLog.empId=ContactTracingTeam.empId
+		where CaseLog.currentStatus ='WorkInProgress'
+		group by ContactTracingTeam.empID
+		having COUNT(CaseLog.caseID)>1
+		order by CaseLog.empID asc;	")
+rs = dbSendQuery(ctDb,query)
+dbRows<-dbFetch(rs)
+dbRows
+```
+
+
+
+
+### CREATE PLOT 1 - PLOT/CHART/OUTLIER
+
+```{r Employee case log}
+### Retrieve the number of cases handled by each Employee.
+
+query<-paste("select caseLogArea.areaId, count(CaseLog.caseID) as 'Number of Cases' from CaseLog
+inner join CaseLogArea on CaseLogArea.caseid = CaseLog.caseid
+inner join Area on Area.areaID = CaseLogArea.areaID
+Group by Area.areaId
+having count(CaseLog.caseID)>=2;")
+rs = dbSendQuery(ctDb,query)
+dbRows<-dbFetch(rs)
+dbRows
+
+a <- dbRows$`Number of Cases`
+b <- dbRows$areaId
+plot(dbRows,col="blue")
+```
+```{r}
+query<-paste("CREATE VIEW FINDCONTACT1
+AS 
+with recursive tracing (contactId, User1, User2, Level) as (
+  select     contactId,
+             user1Id,
+             user2Id,
+             1 LEVEL
+  from       CONTACT
+  where      user1Id IN (SELECT PERSON.userId FROM PERSON,TestReport,CaseLog 
+                            WHERE PERSON.userId=TestReport.userId AND TestReport.caseID=CaseLog.caseID 
+                            AND TestReport.result='Positive'
+                            AND testDate BETWEEN '2019-04-01' AND '2021-04-30')
+  union all
+  select     c.contactId,
+             c.user1Id,
+             c.user2Id,
+             LEVEL + 1
+  from       CONTACT c
+  inner join tracing
+          on c.user1Id = tracing.user2Id
+)
+select * from tracing ORDER BY LEVEL;")
+rs = dbSendQuery(ctDb,query)
+dbRows<-dbFetch(rs)
+dbRows
+```
+```{r}
+query <- paste("Select * from FINDCONTACT;")
+rs = dbSendQuery(ctDb,query)
+dbRows<-dbFetch(rs)
+dbRows
+```
+
+
+
+```{r casesEmployeeView}
+query <- paste("CREATE VIEW casesEmployee5 AS SELECT ContactTracingTeam.empID, COUNT(CaseLog.caseID) 
+		as 'NumberofCases' from ContactTracingTeam 
+        LEFT JOIN CaseLog 
+        ON CaseLog.empId=ContactTracingTeam.empId
+        where CaseLog.currentStatus ='WorkInProgress'
+		group by ContactTracingTeam.empID
+		order by CaseLog.empID asc;")
+rs = dbSendQuery(ctDb,query)
+dbRows <- dbFetch(rs)
+```
+
+```{r Query on view - casesEmployee}
+query <- paste( " SELECT * FROM casesEmployee5 where NumberofCases > 1; ")
+rs = dbSendQuery(ctDb, query)
+dbRows <- dbFetch(rs)
+dbRows
+```
+```{r}
+#### Create a row into Contact Table
+
+user1 = '77'
+user2 = '67'
+riskFactor = '5'
+insertContact <- function(user1, user2, riskFactor, DateOfContact){
+  query <- paste( "Insert into Contact (user1Id, user2Id, riskFactor, DateOfContact) Values ('",user1,"', '",user2,"', '",riskFactor,"','",DateOfContact,"');")
+  rs = dbSendQuery(ctDb, query)
+  dbRows <- dbFetch(rs)
+}
+
+insertContact(user1, user2, riskFactor, '2020-09-17')
+readContact('user1')
+
+```
+
+```{r}
+
+#### Read tuples based on user1Id
+
+readContact <- function(user1){
+  query <- paste("Select * from Contact where Contact.user1Id = '",user1,"';")
+  rs = dbSendQuery(ctDb, query)
+  dbRows <- dbFetch(rs)
+  dbRows
+}
+readContact(user1);
+```
+
+```{r}
+view_query <- paste("Create view contact_area_view as Select * from Contact, Area")
+```
+
+
+```{r}
+#### Update function 
+
+update.function <- function(userID, newrisk){
+  query <- paste( "Update Contact SET riskFactor = '",newrisk,"' where user1Id = '",userID,"';")
+  rs = dbSendQuery(ctDb, query)
+  dbRows <- dbFetch(rs)
+}
+update.function(77, 3);
+readContact(user1)
+
+```
+
+```{r}
+
+#### Delete a Contact - parameter : Contact ID
+
+removeContact <- function(contactId) {
+  query <- paste("Delete from Contact where Contact.contactId = '",contactId,"';")
+  rs<- dbSendQuery(ctDb, query)
+}
+
+removeContact(102)
+
+  
+```
+
+```{r}
+
+#### View Contact - parameters: contact ID
+viewContactID <- function(contactId) {
+  query <- paste("Select * from Contact where Contact.contactId = '",contactId,"';")
+  rs<- dbSendQuery(ctDb, query)
+  dbRows <- dbFetch(rs)
+  dbRows
+}
+viewContactID(102)
+```
+```{r}
+query <- paste("CREATE TRIGGER CONTACT_AFTER_INSERT 
+              AFTER INSERT ON CONTACT
+              FOR EACH ROW 
+              BEGIN
+        IF(NEW.USER2ID= NEW.USER1ID)
+        THEN 
+            signal SQLSTATE '45000' SET message_text = 'CANNOT CREATE CONTACT WITH SAME PERSON!';
+        END IF;
+    END;")
+  rs<- dbSendQuery(ctDb, query)
+  dbRows <- dbFetch(rs)
+  dbRows
+
+```
+```{r}
+insertContact(1, 1, 5, '2020-09-17')
+```
+```{r}
+
+## insert Test Report
+Drop Procedure if exists insertTestReport;
+DELIMITER $$
+CREATE Procedure insertTestReport(
+                            IN userID Integer,
+                            IN testFacilityID Integer,
+                            IN testDate Date,
+                            IN resultDate Date,
+                            IN result Text ,
+                            IN caseID Integer,
+                            IN device Text)
+	   BEGIN
+       -- Set transaction isolation level serializable;
+       START TRANSACTION;
+       IF (testDate <= resultDate)
+	
+       then
+            IF  result ='POSITIVE' THEN
+				
+				INSERT INTO TESTREPORT (userId, testFacilityId, testDate, resultDate,result,caseId,device) VALUES (userId, testFacilityId, testDate, resultDate,result,caseId,device);
+                If resultDate > (select MAX(resultDate) from TestReport where TestReport.userID = userID) 
+				then 	
+					UPDATE PERSON SET USERTYPE='INFECTED' WHERE PERSON.USERID=userID;
+					UPDATE CONTACT SET RISKFACTOR = 'HIGH'  WHERE (CONTACT.USER1ID= userID OR CONTACT.USER2ID=userID) AND (Contact.dateOfContact > resultDate);
+				END IF;
+			ELSE
+				
+				INSERT INTO TESTREPORT (userId, testFacilityId, testDate, resultDate,result,caseId,device) VALUES (userId, testFacilityId, testDate, resultDate,result,NULL,device);
+				If resultDate > (select MAX(resultDate) from TestReport where TestReport.userID = userID)
+                then
+					UPDATE PERSON SET USERTYPE='NOT-INFECTED' WHERE PERSON.USERID = userID;
+				END IF;
+			END IF;
+		Else
+			signal SQLSTATE '45000' SET message_text = 'INVALID DATA: Test Date cannot be greater than result date!';
+		END IF;
+	 COMMIT;
+    END$$
+DELIMITER ;
+
+```
+
+### CLOSE DATABASE CONNECTION
+```{r}
+dbDisconnect(ctDb)
+```
+
